@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function Dashboard() {
   const [data, setData] = useState<FedRateDataPoint[]>([]);
-  const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,13 +16,14 @@ export function Dashboard() {
       try {
         const response = await fetch("/api/fed-rate");
         const result = await response.json();
-        setData(result.data);
-        setIsDemo(result.isDemo);
-        if (result.error) {
-          setError(result.error);
+        
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to fetch data");
         }
+        
+        setData(result.data);
       } catch (err) {
-        setError("Failed to fetch data");
+        setError(err instanceof Error ? err.message : "Failed to fetch data");
         console.error(err);
       } finally {
         setLoading(false);
@@ -53,6 +53,20 @@ export function Dashboard() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="max-w-md p-6 bg-red-950/50 border border-red-900 rounded-lg text-center">
+          <h2 className="text-red-400 text-lg font-semibold mb-2">Failed to Load Data</h2>
+          <p className="text-red-300 text-sm mb-4">{error}</p>
+          <p className="text-zinc-500 text-xs">
+            Make sure the FRED_API_KEY environment variable is set correctly.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header */}
@@ -71,11 +85,6 @@ export function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-6">
-              {isDemo && (
-                <span className="px-2 py-1 text-xs bg-amber-950 text-amber-400 border border-amber-900 rounded">
-                  Demo Data
-                </span>
-              )}
               {currentRate && (
                 <div className="text-right">
                   <p className="text-xs text-zinc-500 uppercase tracking-wider">
@@ -92,12 +101,6 @@ export function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {error && (
-          <div className="mb-6 p-4 bg-red-950/50 border border-red-900 rounded-lg">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard
@@ -209,5 +212,3 @@ function StatCard({
     </div>
   );
 }
-
-

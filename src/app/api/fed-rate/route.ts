@@ -1,33 +1,25 @@
 import { NextResponse } from "next/server";
-import { fetchFedRateData, getDemoData } from "@/services/fred-api";
+import { fetchFedRateData } from "@/services/fred-api";
 
 export async function GET() {
   const apiKey = process.env.FRED_API_KEY;
 
   if (!apiKey) {
-    // Return demo data if no API key is configured
-    console.log("No FRED_API_KEY found, returning demo data");
-    return NextResponse.json({
-      data: getDemoData(),
-      isDemo: true,
-    });
+    console.error("FRED_API_KEY environment variable is not set");
+    return NextResponse.json(
+      { error: "FRED_API_KEY environment variable is not configured" },
+      { status: 500 }
+    );
   }
 
   try {
     const data = await fetchFedRateData(apiKey);
-    return NextResponse.json({
-      data,
-      isDemo: false,
-    });
+    return NextResponse.json({ data });
   } catch (error) {
     console.error("Error fetching FRED data:", error);
-    // Fallback to demo data on error
-    return NextResponse.json({
-      data: getDemoData(),
-      isDemo: true,
-      error: "Failed to fetch live data, showing demo data",
-    });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch data from FRED API" },
+      { status: 500 }
+    );
   }
 }
-
-
